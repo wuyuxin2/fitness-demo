@@ -103,52 +103,66 @@ function updateCountdown() {
 // 提交记录
 function submitRecord() {
     const weight = parseFloat(document.getElementById('weight').value);
-    const calorieDeficit = parseInt(document.getElementById('calorieDeficit').value);
-    const recordDate = document.getElementById('recordDate').value;
     
-    if (!weight || !calorieDeficit || !recordDate) {
-        alert("请填写完整数据");
+    // 收集饮食数据
+    const dietData = {
+        breakfast: {
+            calories: parseFloat(document.getElementById('breakfastCal').value) || 0,
+            desc: document.getElementById('breakfastDesc').value
+        },
+        lunch: {
+            calories: parseFloat(document.getElementById('lunchCal').value) || 0,
+            desc: document.getElementById('lunchDesc').value
+        },
+        dinner: {
+            calories: parseFloat(document.getElementById('dinnerCal').value) || 0,
+            desc: document.getElementById('dinnerDesc').value
+        },
+        snack: {
+            calories: parseFloat(document.getElementById('snackCal').value) || 0,
+            desc: document.getElementById('snackDesc').value
+        }
+    };
+
+    // 数据验证
+    if (!weight) {
+        alert("请填写体重");
         return;
     }
 
+    // 计算总饮食热量
+    const totalCalories = dietData.breakfast.calories + dietData.lunch.calories + dietData.dinner.calories + dietData.snack.calories;
+
+    // 计算热量缺口
+    const bmr = parseFloat(document.getElementById('bmr').textContent) || 0;
+    const calorieDeficit = bmr - totalCalories;
+
+    // 保存数据到localStorage
     const challenge = JSON.parse(localStorage.getItem('challenge'));
-    const selectedDate = new Date(recordDate);
-    const startDate = new Date(challenge.startDate);
-    const endDate = new Date(challenge.endDate);
+    const currentDate = document.getElementById('recordDate').value;
     
-    // 日期有效性验证
-    if (selectedDate < startDate || selectedDate > endDate) {
-        alert("日期超出挑战范围");
-        return;
-    }
-    
-    if (selectedDate > new Date()) {
-        alert("不能记录未来日期");
-        return;
-    }
-
-    const currentDateStr = selectedDate.toISOString().split('T')[0];
-    const existingIndex = challenge.records.findIndex(r => r.date === currentDateStr);
-
-    // 更新或新增记录
-    if (existingIndex > -1) {
-        challenge.records[existingIndex] = {
-            date: currentDateStr,
+    // 更新记录
+    const recordIndex = challenge.records.findIndex(r => r.date === currentDate);
+    if (recordIndex > -1) {
+        challenge.records[recordIndex] = {
+            date: currentDate,
             weight,
-            calorieDeficit
+            calorieDeficit, // 保存计算出的热量缺口
+            diet: dietData
         };
     } else {
         challenge.records.push({
-            date: currentDateStr,
+            date: currentDate,
             weight,
-            calorieDeficit
+            calorieDeficit, // 保存计算出的热量缺口
+            diet: dietData
         });
     }
-    
+
     localStorage.setItem('challenge', JSON.stringify(challenge));
     updateChart();
+    calculateTotalCalories(); // 更新总热量统计
     alert("记录已保存！");
-    loadRecordData(currentDateStr); // 加载已保存的数据
 }
 
 // 新增天数计算函数
@@ -339,12 +353,46 @@ function loadRecordData(dateStr) {
     const challenge = JSON.parse(localStorage.getItem('challenge'));
     const record = challenge.records.find(r => r.date === dateStr);
     
+    // 加载体重数据
     if (record) {
-        document.getElementById('weight').value = record.weight;
-        document.getElementById('calorieDeficit').value = record.calorieDeficit;
+        document.getElementById('weight').value = record.weight || '';
+        
+        // 更新热量缺口（只读）
+        document.getElementById('calorieDeficit').value = record.calorieDeficit || '';
+
+        // 新增：加载饮食数据
+        if (record.diet) {
+            document.getElementById('breakfastCal').value = record.diet.breakfast?.calories || '';
+            document.getElementById('breakfastDesc').value = record.diet.breakfast?.desc || '';
+            document.getElementById('lunchCal').value = record.diet.lunch?.calories || '';
+            document.getElementById('lunchDesc').value = record.diet.lunch?.desc || '';
+            document.getElementById('dinnerCal').value = record.diet.dinner?.calories || '';
+            document.getElementById('dinnerDesc').value = record.diet.dinner?.desc || '';
+            document.getElementById('snackCal').value = record.diet.snack?.calories || '';
+            document.getElementById('snackDesc').value = record.diet.snack?.desc || '';
+        } else {
+            // 如果当天饮食没有数据，清空饮食输入框
+            document.getElementById('breakfastCal').value = '';
+            document.getElementById('breakfastDesc').value = '';
+            document.getElementById('lunchCal').value = '';
+            document.getElementById('lunchDesc').value = '';
+            document.getElementById('dinnerCal').value = '';
+            document.getElementById('dinnerDesc').value = '';
+            document.getElementById('snackCal').value = '';
+            document.getElementById('snackDesc').value = '';
+        }
     } else {
+        // 清空所有输入框
         document.getElementById('weight').value = '';
         document.getElementById('calorieDeficit').value = '';
+        document.getElementById('breakfastCal').value = '';
+        document.getElementById('breakfastDesc').value = '';
+        document.getElementById('lunchCal').value = '';
+        document.getElementById('lunchDesc').value = '';
+        document.getElementById('dinnerCal').value = '';
+        document.getElementById('dinnerDesc').value = '';
+        document.getElementById('snackCal').value = '';
+        document.getElementById('snackDesc').value = '';
     }
     
     // 更新天数显示

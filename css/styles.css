@@ -139,3 +139,29 @@ button:disabled {
     font-weight: bold;
     color: #2e7d32;
 }
+/* 新增记录组样式 */
+.record-group {
+    background: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+}
+.record-group h4 {
+    color: #2c3e50;
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+.meal-group {
+    display: grid;
+    grid-template-columns: 60px 1fr 2fr;
+    gap: 10px;
+    align-items: center;
+    margin: 8px 0;
+}
+.submit-btn {
+    background: #3498db;
+    color: white;
+    padding: 12px 25px;
+    width: 100%;
+    margin-top: 15px;
+}

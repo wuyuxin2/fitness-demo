@@ -35,59 +35,50 @@
         </div>
 
         <div id="recordForm" style="display: none;">
-            <h3>记录管理 <span id="currentDay" style="font-size: 0.8em; color: #666;"></span></h3>
+            <h3>每日记录 <span id="currentDay" style="font-size: 0.8em; color: #666;"></span></h3>
             <div style="margin-bottom: 10px;">
                 <input type="date" id="recordDate" style="padding: 8px;">
             </div>
-            <div id="lastWeight"></div>
-            <div id="lastCalorie"></div>
-            <input type="number" id="weight" step="0.1" placeholder="体重（kg）">
-            <input type="number" id="calorieDeficit" placeholder="热量缺口（kcal）">
-            <button onclick="submitRecord()">提交记录</button>
+
+            <div class="record-group">
+                <h4>体重与热量</h4>
+                <div id="lastWeight"></div>
+                <div id="lastCalorie"></div>
+                <input type="number" id="weight" step="0.1" placeholder="体重（kg）">
+                <input type="number" id="calorieDeficit" placeholder="热量缺口（kcal）" readonly>
+            </div>
+
+            <div class="record-group">
+                <h4>饮食记录</h4>
+                <div class="meal-group">
+                    <label>早餐：</label>
+                    <input type="number" id="breakfastCal" placeholder="热量">
+                    <input type="text" id="breakfastDesc" placeholder="食物描述">
+                </div>
+                <div class="meal-group">
+                    <label>午餐：</label>
+                    <input type="number" id="lunchCal" placeholder="热量">
+                    <input type="text" id="lunchDesc" placeholder="食物描述">
+                </div>
+                <div class="meal-group">
+                    <label>晚餐：</label>
+                    <input type="number" id="dinnerCal" placeholder="热量">
+                    <input type="text" id="dinnerDesc" placeholder="食物描述">
+                </div>
+                <div class="meal-group">
+                    <label>零食：</label>
+                    <input type="number" id="snackCal" placeholder="热量">
+                    <input type="text" id="snackDesc" placeholder="食物描述">
+                </div>
+            </div>
+
+            <button class="submit-btn" onclick="submitRecord()">提交全部记录</button>
         </div>
 
         <div id="chartContainer">
             <canvas id="weightChart"></canvas>
         </div>
 
-        <div class="record-section">
-            <h2>今日记录</h2>
-            <button onclick="showDietForm()">📝 饮食记录</button>
-            <button onclick="recordWeight()">⚖️ 记录体重</button>
-        </div>
-
-        <div id="dietModal" class="modal">
-            <div class="modal-content">
-                <span class="close" onclick="closeDietForm()">&times;</span>
-                <h3>今日饮食记录</h3>
-                <form id="dietForm" onsubmit="submitDietForm(event)">
-                    <div class="meal-group">
-                        <label>早餐：</label>
-                        <input type="number" id="breakfastCal" placeholder="热量（大卡）">
-                        <input type="text" id="breakfastDesc" placeholder="食物描述">
-                    </div>
-                    <div class="meal-group">
-                        <label>午餐：</label>
-                        <input type="number" id="lunchCal" placeholder="热量（大卡）">
-                        <input type="text" id="lunchDesc" placeholder="食物描述">
-                    </div>
-                    <div class="meal-group">
-                        <label>晚餐：</label>
-                        <input type="number" id="dinnerCal" placeholder="热量（大卡）">
-                        <input type="text" id="dinnerDesc" placeholder="食物描述">
-                    </div>
-                    <div class="meal-group">
-                        <label>零食：</label>
-                        <input type="number" id="snackCal" placeholder="热量（大卡）">
-                        <input type="text" id="snackDesc" placeholder="食物描述">
-                    </div>
-                    <div class="button-group">
-                        <button type="submit">保存记录</button>
-                        <button type="button" onclick="closeDietForm()">取消</button>
-                    </div>
-                </form>
-            </div>
-        </div>
 
         <div class="stats">
             <h3>今日总摄入：<span id="totalCalories">0</span> 大卡</h3>
