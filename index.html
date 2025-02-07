@@ -117,6 +117,50 @@
         .cancel-button:hover {
             background-color: #da190b;
         }
+        .record-section {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+        }
+        .meal-group {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        .modal-content {
+            background: white;
+            margin: 15% auto;
+            padding: 20px;
+            width: 80%;
+            max-width: 500px;
+        }
+        .meal-group {
+            margin: 10px 0;
+            display: flex;
+            gap: 10px;
+        }
+        .stats {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+        .stats h3 {
+            margin: 0;
+            font-size: 16px;
+        }
+        .stats span {
+            font-weight: bold;
+            color: #2e7d32;
+        }
     </style>
 </head>
 <body>
@@ -151,6 +195,49 @@
 
         <div id="chartContainer">
             <canvas id="weightChart"></canvas>
+        </div>
+
+        <div class="record-section">
+            <h2>今日记录</h2>
+            <button onclick="showDietForm()">📝 饮食记录</button>
+            <button onclick="recordWeight()">⚖️ 记录体重</button>
+        </div>
+
+        <div id="dietModal" class="modal">
+            <div class="modal-content">
+                <span class="close" onclick="closeDietForm()">&times;</span>
+                <h3>今日饮食记录</h3>
+                <form id="dietForm" onsubmit="submitDietForm(event)">
+                    <div class="meal-group">
+                        <label>早餐：</label>
+                        <input type="number" id="breakfastCal" placeholder="热量（大卡）">
+                        <input type="text" id="breakfastDesc" placeholder="食物描述">
+                    </div>
+                    <div class="meal-group">
+                        <label>午餐：</label>
+                        <input type="number" id="lunchCal" placeholder="热量（大卡）">
+                        <input type="text" id="lunchDesc" placeholder="食物描述">
+                    </div>
+                    <div class="meal-group">
+                        <label>晚餐：</label>
+                        <input type="number" id="dinnerCal" placeholder="热量（大卡）">
+                        <input type="text" id="dinnerDesc" placeholder="食物描述">
+                    </div>
+                    <div class="meal-group">
+                        <label>零食：</label>
+                        <input type="number" id="snackCal" placeholder="热量（大卡）">
+                        <input type="text" id="snackDesc" placeholder="食物描述">
+                    </div>
+                    <div class="button-group">
+                        <button type="submit">保存记录</button>
+                        <button type="button" onclick="closeDietForm()">取消</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="stats">
+            <h3>今日总摄入：<span id="totalCalories">0</span> 大卡</h3>
         </div>
 
         <div class="nav-buttons">
@@ -696,6 +783,58 @@
                 showMainPage();
                 loadProfile(); // 重新加载之前保存的数据
             }
+        }
+
+        // 新增饮食记录相关函数
+        function showDietForm() {
+            document.getElementById('dietModal').style.display = 'block';
+        }
+
+        function closeDietForm() {
+            document.getElementById('dietModal').style.display = 'none';
+        }
+
+        function submitDietForm(e) {
+            e.preventDefault();
+            // 收集各餐数据
+            const dietData = {
+                date: new Date().toLocaleDateString(),
+                meals: {
+                    breakfast: {
+                        calories: document.getElementById('breakfastCal').value,
+                        desc: document.getElementById('breakfastDesc').value
+                    },
+                    lunch: {
+                        calories: document.getElementById('lunchCal').value,
+                        desc: document.getElementById('lunchDesc').value
+                    },
+                    dinner: {
+                        calories: document.getElementById('dinnerCal').value,
+                        desc: document.getElementById('dinnerDesc').value
+                    },
+                    snack: {
+                        calories: document.getElementById('snackCal').value,
+                        desc: document.getElementById('snackDesc').value
+                    }
+                }
+            };
+            
+            // 保存到localStorage
+            localStorage.setItem('dietRecord_' + dietData.date, JSON.stringify(dietData));
+            
+            // 更新总热量显示
+            calculateTotalCalories();
+            closeDietForm();
+        }
+
+        function calculateTotalCalories() {
+            let total = 0;
+            // 从localStorage读取数据计算
+            const dietRecords = JSON.parse(localStorage.getItem('dietRecord_' + new Date().toLocaleDateString())) || {};
+            for (const meal in dietRecords.meals) {
+                total += parseFloat(dietRecords.meals[meal].calories) || 0;
+            }
+            document.getElementById('totalCalories').textContent = Math.round(total);
         }
 
         // 页面加载时初始化
