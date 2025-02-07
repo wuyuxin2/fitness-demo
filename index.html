@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>30天减脂挑战</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <script>
+        // 如果主CDN加载失败，尝试使用备用CDN
+        window.addEventListener('error', function(e) {
+            if (e.target.src && e.target.src.includes('cdnjs.cloudflare.com')) {
+                const script = document.createElement('script');
+                script.src = 'https://cdn.bootcdn.net/ajax/libs/Chart.js/4.4.1/chart.umd.min.js';
+                document.head.appendChild(script);
+            }
+        }, true);
+    </script>
+    <style>
+        .container { max-width: 800px; margin: 0 auto; padding: 20px; }
+        .panel { background: #f5f5f5; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        .buttons { display: flex; gap: 10px; margin: 20px 0; }
+        button { padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        .start-btn { background: #4CAF50; color: white; }
+        .giveup-btn { background: #f44336; color: white; }
+        input { padding: 8px; margin: 5px; width: 120px; }
+        #chartContainer { margin-top: 20px; }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        .start-btn:disabled { background: #81C784; }
+        .giveup-btn:disabled { background: #EF9A9A; }
+        .nav-buttons {
+            margin: 15px 0;
+            text-align: right;
+        }
+        .nav-buttons button {
+            padding: 8px 16px;
+            background-color: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .nav-buttons button:hover {
+            background-color: #1976D2;
+        }
+        .profile-form {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            border-radius: 8px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: inline-block;
+            width: 150px;
+            margin-right: 10px;
+        }
+        .form-group input,
+        .form-group select {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .results {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #e8f5e9;
+            border-radius: 4px;
+        }
+        .results p {
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        .results span {
+            font-weight: bold;
+            color: #2e7d32;
+        }
+        .profile-summary {
+            background-color: #e8f5e9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        .summary-content span {
+            margin: 0 15px;
+            font-size: 14px;
+            color: #2e7d32;
+        }
+        .button-group {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .save-button, .cancel-button {
+            padding: 10px 20px;
+            margin: 0 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .save-button {
+            background-color: #4CAF50;
+            color: white;
+        }
+        .save-button:hover {
+            background-color: #45a049;
+        }
+        .cancel-button {
+            background-color: #f44336;
+            color: white;
+        }
+        .cancel-button:hover {
+            background-color: #da190b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="panel">
+            <h2>30天减脂挑战</h2>
+            <div style="margin: 10px 0;">
+                <input type="date" id="startDate" style="padding: 8px;">
+            </div>
+            <div id="challengeInfo">
+                <div id="startDate"></div>
+                <div id="endDate"></div>
+                <div id="countdown"></div>
+            </div>
+            <div class="buttons">
+                <button class="start-btn" id="startBtn" onclick="startChallenge()">开始挑战</button>
+                <button class="giveup-btn" id="giveupBtn" onclick="giveUpChallenge()">放弃挑战</button>
+            </div>
+        </div>
+
+        <div id="recordForm" style="display: none;">
+            <h3>记录管理 <span id="currentDay" style="font-size: 0.8em; color: #666;"></span></h3>
+            <div style="margin-bottom: 10px;">
+                <input type="date" id="recordDate" style="padding: 8px;">
+            </div>
+            <div id="lastWeight"></div>
+            <div id="lastCalorie"></div>
+            <input type="number" id="weight" step="0.1" placeholder="体重（kg）">
+            <input type="number" id="calorieDeficit" placeholder="热量缺口（kcal）">
+            <button onclick="submitRecord()">提交记录</button>
+        </div>
+
+        <div id="chartContainer">
+            <canvas id="weightChart"></canvas>
+        </div>
+
+        <div class="nav-buttons">
+            <button id="profileButton" onclick="showProfilePage()">个人信息设置</button>
+        </div>
+    </div>
+
+    <div id="profileSummary" class="profile-summary">
+        <div class="summary-content">
+            <span id="summaryGender"></span>
+            <span id="summaryAge"></span>
+            <span id="summaryHeight"></span>
+            <span id="summaryWeight"></span>
+            <span id="summaryBMR"></span>
+        </div>
+    </div>
+
+    <div id="profilePage" style="display: none;" class="container">
+        <h2>个人信息设置</h2>
+        <div class="profile-form">
+            <div class="form-group">
+                <label for="gender">性别：</label>
+                <select id="gender" onchange="calculateBMR()">
+                    <option value="male">男</option>
+                    <option value="female">女</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="age">年龄：</label>
+                <input type="number" id="age" min="1" max="120" onchange="calculateBMR()">
+            </div>
+            
+            <div class="form-group">
+                <label for="height">身高 (cm)：</label>
+                <input type="number" id="height" min="100" max="250" onchange="calculateBMR()">
+            </div>
+            
+            <div class="form-group">
+                <label for="profileWeight">体重 (kg)：</label>
+                <input type="number" id="profileWeight" min="30" max="200" step="0.1" onchange="calculateBMR()">
+            </div>
+            
+            <div class="form-group">
+                <label for="activityLevel">日常活动水平：</label>
+                <select id="activityLevel" onchange="calculateBMR()">
+                    <option value="1.2">久坐不动</option>
+                    <option value="1.375">轻度活动（每周运动1-3次）</option>
+                    <option value="1.55">中度活动（每周运动3-5次）</option>
+                    <option value="1.725">高度活动（每周运动6-7次）</option>
+                    <option value="1.9">非常活跃（运动员水平）</option>
+                </select>
+            </div>
+
+            <div class="results">
+                <p>基础代谢率（BMR）：<span id="bmr">-</span> kcal/天</p>
+                <p>每日消耗热量（TDEE）：<span id="tdee">-</span> kcal/天</p>
+                <p>建议减重热量摄入：<span id="suggested">-</span> kcal/天</p>
+            </div>
+
+            <div class="button-group">
+                <button onclick="saveAndReturn()" class="save-button">保存并返回</button>
+                <button onclick="cancelAndReturn()" class="cancel-button">取消</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let chart = null;
+        let challengeActive = false;
+
+        // 初始化检查本地存储
+        function init() {
+            console.log('Initializing...');
+            
+            const challengeData = localStorage.getItem('challenge');
+            if (challengeData) {
+                console.log('Found challenge data:', challengeData);
+                
+                const challenge = JSON.parse(challengeData);
+                const now = Date.now();
+                
+                if (challenge.endDate > now) {
+                    challengeActive = true;
+                    
+                    // 设置开始日期输入框的值和状态
+                    const startDateInput = document.getElementById('startDate');
+                    startDateInput.value = new Date(challenge.startDate).toISOString().split('T')[0];
+                    startDateInput.disabled = true;  // 禁用输入框
+                    
+                    // 更新其他UI元素
+                    showRecordForm();
+                    updateCountdown();
+                    initializeChart();
+                    
+                    // 更新按钮显示状态
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('giveupBtn').style.display = 'block';
+                } else {
+                    console.log('Challenge has ended');
+                    localStorage.removeItem('challenge');
+                    challengeActive = false;
+                    
+                    // 重置开始日期输入框
+                    const startDateInput = document.getElementById('startDate');
+                    startDateInput.value = '';
+                    startDateInput.disabled = false;  // 启用输入框
+                }
+            } else {
+                console.log('No challenge data found');
+                // 确保开始日期输入框可用
+                const startDateInput = document.getElementById('startDate');
+                startDateInput.disabled = false;
+            }
+        }
+
+        // 开始挑战
+        function startChallenge() {
+            const startDateInput = document.getElementById('startDate');
+            const selectedStartDate = new Date(startDateInput.value);
+            
+            // 如果没有选择日期，使用当前时间
+            const startDate = startDateInput.value ? selectedStartDate.getTime() : Date.now();
+            const endDate = startDate + 30 * 24 * 60 * 60 * 1000;
+            
+            localStorage.setItem('challenge', JSON.stringify({
+                startDate,
+                endDate,
+                records: []
+            }));
+            
+            challengeActive = true;
+            
+            // 禁用开始日期输入框
+            startDateInput.disabled = true;
+            
+            // 更新其他UI...
+            if (chart) {
+                chart.destroy();
+                chart = null;
+            }
+            
+            showRecordForm();
+            updateCountdown();
+            initializeChart();
+            
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('giveupBtn').style.display = 'block';
+        }
+
+        // 更新倒计时
+        function updateCountdown() {
+            if (!challengeActive) {
+                updateButtonStates();
+                return;
+            }
+            
+            const challenge = JSON.parse(localStorage.getItem('challenge'));
+            const remaining = Math.ceil((challenge.endDate - Date.now()) / (1000 * 60 * 60 * 24));
+            
+            document.getElementById('countdown').textContent = 
+                remaining > 0 ? `剩余天数：${remaining}天` : "挑战完成！";
+            
+            if (remaining <= 0) {
+                challengeActive = false;
+            } else {
+                setTimeout(updateCountdown, 1000 * 60 * 60); // 每小时更新一次
+            }
+        }
+
+        // 提交记录
+        function submitRecord() {
+            const weight = parseFloat(document.getElementById('weight').value);
+            const calorieDeficit = parseInt(document.getElementById('calorieDeficit').value);
+            const recordDate = document.getElementById('recordDate').value;
+            
+            if (!weight || !calorieDeficit || !recordDate) {
+                alert("请填写完整数据");
+                return;
+            }
+
+            const challenge = JSON.parse(localStorage.getItem('challenge'));
+            const selectedDate = new Date(recordDate);
+            const startDate = new Date(challenge.startDate);
+            const endDate = new Date(challenge.endDate);
+            
+            // 日期有效性验证
+            if (selectedDate < startDate || selectedDate > endDate) {
+                alert("日期超出挑战范围");
+                return;
+            }
+            
+            if (selectedDate > new Date()) {
+                alert("不能记录未来日期");
+                return;
+            }
+
+            const currentDateStr = selectedDate.toISOString().split('T')[0];
+            const existingIndex = challenge.records.findIndex(r => r.date === currentDateStr);
+
+            // 更新或新增记录
+            if (existingIndex > -1) {
+                challenge.records[existingIndex] = {
+                    date: currentDateStr,
+                    weight,
+                    calorieDeficit
+                };
+            } else {
+                challenge.records.push({
+                    date: currentDateStr,
+                    weight,
+                    calorieDeficit
+                });
+            }
+            
+            localStorage.setItem('challenge', JSON.stringify(challenge));
+            updateChart();
+            alert("记录已保存！");
+            loadRecordData(currentDateStr); // 加载已保存的数据
+        }
+
+        // 新增天数计算函数
+        function updateDayCounter() {
+            const challenge = JSON.parse(localStorage.getItem('challenge'));
+            const startDate = new Date(challenge.startDate);
+            const currentDate = new Date();
+            const day = Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            document.getElementById('currentDay').textContent = `第${day}天`;
+        }
+
+        // 初始化图表
+        function initializeChart() {
+            const ctx = document.getElementById('weightChart').getContext('2d');
+            const data = getChartData();
+            
+            chart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: data.labels,
+                    datasets: [
+                        {
+                            label: '体重 (kg)',
+                            data: data.weights,
+                            borderColor: '#4CAF50',
+                            backgroundColor: '#4CAF50',
+                            tension: 0.1,
+                            fill: false,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: '热量缺口 (kcal)',
+                            data: data.calories,
+                            borderColor: '#FF6384',
+                            backgroundColor: '#FF6384',
+                            tension: 0.1,
+                            fill: false,
+                            yAxisID: 'y1'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false,
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                pointStyle: 'circle'
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false
+                        }
+                    },
+                    scales: {
+                        x: {
+                            display: true,
+                            title: {
+                                display: true,
+                                text: '日期'
+                            }
+                        },
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            title: {
+                                display: true,
+                                text: '体重 (kg)'
+                            }
+                        },
+                        y1: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            title: {
+                                display: true,
+                                text: '热量缺口 (kcal)'
+                            },
+                            grid: {
+                                drawOnChartArea: false // 只显示右侧刻度，不显示网格线
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 更新图表
+        function updateChart() {
+            const data = getChartData();
+            chart.data.labels = data.labels;
+            chart.data.datasets[0].data = data.weights;
+            chart.data.datasets[1].data = data.calories;
+            chart.update();
+        }
+
+        // 获取图表数据
+        function getChartData() {
+            const challenge = JSON.parse(localStorage.getItem('challenge')) || { records: [] };
+            
+            // 按日期排序记录
+            const sortedRecords = challenge.records.sort((a, b) => 
+                new Date(a.date) - new Date(b.date)
+            );
+
+            return {
+                labels: sortedRecords.map(r => r.date),
+                weights: sortedRecords.map(r => r.weight),
+                calories: sortedRecords.map(r => r.calorieDeficit) // 添加热量缺口数据
+            };
+        }
+
+        // 放弃挑战
+        function giveUpChallenge() {
+            if (confirm("确定要放弃挑战吗？")) {
+                localStorage.removeItem('challenge');
+                challengeActive = false;
+                document.getElementById('recordForm').style.display = 'none';
+                document.getElementById('countdown').textContent = "挑战已放弃";
+                if (chart) chart.destroy();
+                updateButtonStates();
+            }
+        }
+
+        function showRecordForm() {
+            const recordForm = document.getElementById('recordForm');
+            recordForm.style.display = 'block';
+            
+            // 获取挑战数据
+            const challenge = JSON.parse(localStorage.getItem('challenge')) || { records: [] };
+            
+            // 获取输入框元素
+            const weightInput = document.getElementById('weight');
+            const calorieInput = document.getElementById('calorieDeficit');
+            const dateInput = document.getElementById('recordDate');
+            
+            if (challengeActive) {
+                // 如果挑战已开始，启用输入框
+                weightInput.disabled = false;
+                calorieInput.disabled = false;
+                dateInput.disabled = false;
+                
+                // 设置日期输入框的最小值为开始日期，最大值为今天
+                const startDate = new Date(challenge.startDate);
+                const today = new Date();
+                dateInput.min = startDate.toISOString().split('T')[0];
+                dateInput.max = today.toISOString().split('T')[0];
+                
+                // 默认选择今天的日期
+                dateInput.value = today.toISOString().split('T')[0];
+                
+                // 显示最新记录
+                if (challenge.records.length > 0) {
+                    const lastRecord = challenge.records[challenge.records.length - 1];
+                    document.getElementById('lastWeight').textContent = 
+                        `上次记录：${lastRecord.weight}kg (${lastRecord.date})`;
+                    if (lastRecord.calorieDeficit) {
+                        document.getElementById('lastCalorie').textContent = 
+                            `上次热量缺口：${lastRecord.calorieDeficit}kcal`;
+                    }
+                }
+            } else {
+                // 如果挑战未开始，禁用输入框
+                weightInput.disabled = true;
+                calorieInput.disabled = true;
+                dateInput.disabled = true;
+                
+                // 清空显示
+                document.getElementById('lastWeight').textContent = '';
+                document.getElementById('lastCalorie').textContent = '';
+            }
+        }
+
+        // 新增记录日期改变监听
+        document.getElementById('recordDate').addEventListener('change', function() {
+            loadRecordData(this.value);
+        });
+
+        // 新增加载记录数据函数
+        function loadRecordData(dateStr) {
+            const challenge = JSON.parse(localStorage.getItem('challenge'));
+            const record = challenge.records.find(r => r.date === dateStr);
+            
+            if (record) {
+                document.getElementById('weight').value = record.weight;
+                document.getElementById('calorieDeficit').value = record.calorieDeficit;
+            } else {
+                document.getElementById('weight').value = '';
+                document.getElementById('calorieDeficit').value = '';
+            }
+            
+            // 更新天数显示
+            const startDate = new Date(challenge.startDate);
+            const currentDate = new Date(dateStr);
+            const day = Math.floor((currentDate - startDate) / (1000 * 60 * 60 * 24)) + 1;
+            document.getElementById('currentDay').textContent = `第${day}天`;
+        }
+
+        // 新增按钮状态更新函数
+        function updateButtonStates() {
+            const challenge = JSON.parse(localStorage.getItem('challenge'));
+            const hasActiveChallenge = challenge && challenge.endDate > Date.now();
+            
+            document.getElementById('startBtn').disabled = hasActiveChallenge;
+            document.getElementById('giveupBtn').disabled = !hasActiveChallenge;
+        }
+
+        // 显示主页面
+        function showMainPage() {
+            document.getElementById('profilePage').style.display = 'none';
+            document.querySelector('.container').style.display = 'block';
+            document.getElementById('profileButton').style.display = 'block';
+            updateProfileSummary();
+        }
+
+        // 显示个人信息页面
+        function showProfilePage() {
+            document.getElementById('profilePage').style.display = 'block';
+            document.querySelector('.container').style.display = 'none';
+            document.getElementById('profileButton').style.display = 'none';
+            loadProfile();
+        }
+
+        // 计算基础代谢率和每日消耗
+        function calculateBMR() {
+            const gender = document.getElementById('gender').value;
+            const age = parseFloat(document.getElementById('age').value) || 0;
+            const height = parseFloat(document.getElementById('height').value) || 0;
+            const weight = parseFloat(document.getElementById('profileWeight').value) || 0;
+            const activityLevel = parseFloat(document.getElementById('activityLevel').value) || 1.2;
+            
+            let bmr = 0;
+            
+            // 使用Mifflin-St Jeor公式计算BMR
+            if (gender === 'male') {
+                bmr = 10 * weight + 6.25 * height - 5 * age + 5;
+            } else {
+                bmr = 10 * weight + 6.25 * height - 5 * age - 161;
+            }
+            
+            // 计算TDEE（每日总能量消耗）
+            const tdee = bmr * activityLevel;
+            
+            // 计算建议的减重热量摄入（减去500-1000卡路里）
+            const suggested = Math.max(1200, tdee - 500);
+            
+            // 显示结果
+            document.getElementById('bmr').textContent = Math.round(bmr);
+            document.getElementById('tdee').textContent = Math.round(tdee);
+            document.getElementById('suggested').textContent = Math.round(suggested);
+            
+            // 保存个人信息
+            saveProfile();
+        }
+
+        // 保存个人信息
+        function saveProfile() {
+            const profile = {
+                gender: document.getElementById('gender').value,
+                age: document.getElementById('age').value,
+                height: document.getElementById('height').value,
+                weight: document.getElementById('profileWeight').value,
+                activityLevel: document.getElementById('activityLevel').value
+            };
+            
+            localStorage.setItem('userProfile', JSON.stringify(profile));
+        }
+
+        // 加载个人信息
+        function loadProfile() {
+            const profile = JSON.parse(localStorage.getItem('userProfile'));
+            if (profile) {
+                document.getElementById('gender').value = profile.gender;
+                document.getElementById('age').value = profile.age;
+                document.getElementById('height').value = profile.height;
+                document.getElementById('profileWeight').value = profile.weight;
+                document.getElementById('activityLevel').value = profile.activityLevel;
+                
+                calculateBMR();
+            }
+        }
+
+        // 更新个人信息摘要
+        function updateProfileSummary() {
+            const profile = JSON.parse(localStorage.getItem('userProfile'));
+            if (profile) {
+                document.getElementById('summaryGender').textContent = 
+                    `性别: ${profile.gender === 'male' ? '男' : '女'}`;
+                document.getElementById('summaryAge').textContent = 
+                    `年龄: ${profile.age}岁`;
+                document.getElementById('summaryHeight').textContent = 
+                    `身高: ${profile.height}cm`;
+                document.getElementById('summaryWeight').textContent = 
+                    `体重: ${profile.weight}kg`;
+                document.getElementById('summaryBMR').textContent = 
+                    `基础代谢: ${document.getElementById('bmr').textContent}kcal/天`;
+                
+                // 显示摘要区域
+                document.getElementById('profileSummary').style.display = 'block';
+            } else {
+                // 如果没有个人信息，隐藏摘要区域
+                document.getElementById('profileSummary').style.display = 'none';
+            }
+        }
+
+        // 保存并返回主页面
+        function saveAndReturn() {
+            saveProfile();
+            calculateBMR();
+            updateProfileSummary();
+            showMainPage();
+        }
+
+        // 取消并返回主页面
+        function cancelAndReturn() {
+            if (confirm('确定要取消吗？未保存的更改将丢失。')) {
+                showMainPage();
+                loadProfile(); // 重新加载之前保存的数据
+            }
+        }
+
+        // 页面加载时初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            init();
+            loadProfile();
+            updateProfileSummary();
+        });
+    </script>
+</body>
+</html> 
