@@ -104,6 +104,7 @@ function updateCountdown() {
 function submitRecord() {
     const weight = parseFloat(document.getElementById('weight').value);
     
+    
     // 收集饮食数据
     const dietData = {
         breakfast: {
@@ -124,6 +125,13 @@ function submitRecord() {
         }
     };
 
+    //收集训练数据
+    const exerciseData = {
+        name: document.getElementById('exerciseName').value,
+        duration: parseInt(document.getElementById('exerciseDuration').value) || 0,
+        calories: parseInt(document.getElementById('exerciseCalories').value) || 0
+    };
+
     // 数据验证
     if (!weight) {
         alert("请填写体重");
@@ -135,7 +143,8 @@ function submitRecord() {
 
     // 计算热量缺口
     const bmr = parseFloat(document.getElementById('bmr').textContent) || 0;
-    const calorieDeficit = bmr - totalCalories;
+    const totalExerciseCalories = exerciseData.calories;
+    const calorieDeficit = (bmr + totalExerciseCalories) - totalCalories;
 
     // 保存数据到localStorage
     const challenge = JSON.parse(localStorage.getItem('challenge'));
@@ -148,14 +157,16 @@ function submitRecord() {
             date: currentDate,
             weight,
             calorieDeficit, // 保存计算出的热量缺口
-            diet: dietData
+            diet: dietData,
+            exercise: exerciseData // 新增训练数据
         };
     } else {
         challenge.records.push({
             date: currentDate,
             weight,
             calorieDeficit, // 保存计算出的热量缺口
-            diet: dietData
+            diet: dietData,
+            exercise: exerciseData // 新增训练数据
         });
     }
 
@@ -163,6 +174,9 @@ function submitRecord() {
     updateChart();
     calculateTotalCalories(); // 更新总热量统计
     alert("记录已保存！");
+
+    // 刷新最新的数据
+    loadRecordData(currentDate); // 重新加载当前日期的数据
 }
 
 // 新增天数计算函数
@@ -352,7 +366,16 @@ document.getElementById('recordDate').addEventListener('change', function() {
 function loadRecordData(dateStr) {
     const challenge = JSON.parse(localStorage.getItem('challenge'));
     const record = challenge.records.find(r => r.date === dateStr);
-    
+    // 在loadRecordData函数中添加训练数据加载
+    if (record.exercise) {
+        document.getElementById('exerciseName').value = record.exercise.name || '';
+        document.getElementById('exerciseDuration').value = record.exercise.duration || '';
+        document.getElementById('exerciseCalories').value = record.exercise.calories || '';
+    } else {
+        document.getElementById('exerciseName').value = '';
+        document.getElementById('exerciseDuration').value = '';
+        document.getElementById('exerciseCalories').value = '';
+    }
     // 加载体重数据
     if (record) {
         document.getElementById('weight').value = record.weight || '';

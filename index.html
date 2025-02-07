@@ -72,8 +72,17 @@
                 </div>
             </div>
 
-            <button class="submit-btn" onclick="submitRecord()">提交全部记录</button>
+             <!-- 新增训练记录部分 -->
+        <div class="record-group">
+            <h4>训练记录</h4>
+            <div class="exercise-group">
+                <input type="text" id="exerciseName" placeholder="训练内容">
+                <input type="number" id="exerciseDuration" placeholder="时长（分钟）">
+                <input type="number" id="exerciseCalories" placeholder="消耗卡路里">
+            </div>
         </div>
+    
+        <button class="submit-btn" onclick="submitRecord()">提交全部记录</button>
 
         <div id="chartContainer">
             <canvas id="weightChart"></canvas>
